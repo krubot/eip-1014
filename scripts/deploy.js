@@ -2,9 +2,33 @@ require("dotenv").config();
 
 const { writeFileSync } = require("fs");
 const { ethers, artifacts } = require("hardhat");
+const readlinePromises = require('readline');
 
-async function deploy() {
+const rl = readlinePromises.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: true,
+});
+
+rl.question('Arguments file for deployment: ', (constructorArgsFile) => {
+  if (constructorArgsFile != "") {
+    var argModule = require(process.cwd() + "/" + constructorArgsFile);
+  } else {
+    var argModule = "";
+  }
+
+  deploy(argModule).catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+
+  rl.close();
+});
+
+async function deploy(deployArgs) {
   const accounts = await ethers.getSigners();
+
+  const abiCoder = new ethers.utils.AbiCoder();
 
   if (process.env.GOERLI_EIP_1014_CONTRACT == null) {
     const EIP1014Artifact = await artifacts.readArtifact("eip-1014");
@@ -36,7 +60,10 @@ async function deploy() {
     '0xff',
     factory_address,
     salt,
-    ethers.utils.keccak256(Storage.bytecode)
+    ethers.utils.keccak256(ethers.utils.hexConcat([
+      Storage.bytecode,
+      abiCoder.encode(["uint256"],deployArgs),
+    ])),
   ])).slice(-40);
 
   console.log("Deployment address of contract from factory is: ",deploymentAddress);
@@ -44,7 +71,11 @@ async function deploy() {
   if ((await ethers.provider.getCode(deploymentAddress)) == '0x') {
     var codeDeploy = await accounts[0].sendTransaction({
       to: factory_address,
-      data: ethers.utils.hexConcat([salt,Storage.bytecode]),
+      data: ethers.utils.hexConcat([
+        salt,
+        Storage.bytecode,
+        abiCoder.encode(["uint256"],deployArgs),
+      ])
     });
 
     console.log("Deployment of contract from factory transaction: ",codeDeploy.hash);
@@ -56,10 +87,3 @@ async function deploy() {
     console.log("Deployment of contract from factory has already been deployed");
   }
 }
-
-deploy().then(() => {
-	process.exit(0)
-}).catch(error => {
-	console.error(error)
-	process.exit(1)
-})
