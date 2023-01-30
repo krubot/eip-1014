@@ -4,10 +4,9 @@ task("tx", "Run a transaction against the contract ABI")
     .addParam("functionName", "The contract function to call here")
     .addParam("functionArgs", "The contract function arguments to be run here")
     .addParam("contractName", "Name of the contract your calling the function for here")
+    .addParam("address", "Name of the adddress of the where the contract has been deployed")
     .addOptionalParam("gasLimit", "The gas limit set for the transaction")
     .setAction(async (taskArgs) => {
-      const abiCoder = new ethers.utils.AbiCoder();
-      
       const Contract = await ethers.getContractFactory(taskArgs.contractName);
 
       if (process.env.GOERLI_EIP_1014_CONTRACT == null) {
@@ -15,17 +14,7 @@ task("tx", "Run a transaction against the contract ABI")
         return
       }
 
-      var deploymentAddress = '0x' + ethers.utils.keccak256(ethers.utils.hexConcat([
-        '0xff',
-        process.env.GOERLI_EIP_1014_CONTRACT,
-        ethers.utils.hexZeroPad(ethers.utils.hexlify(0),32),
-        ethers.utils.keccak256(ethers.utils.hexConcat([
-          Contract.bytecode,
-          abiCoder.encode(["uint256"],[42]),
-        ]))
-      ])).slice(-40);
-
-      const contract = await Contract.attach(deploymentAddress);
+      const contract = await Contract.attach(taskArgs.address);
 
       if (taskArgs.hasOwnProperty('gasLimit')) {
         var result = await contract[taskArgs.functionName](...JSON.parse(taskArgs.functionArgs),{gasLimit : taskArgs.gasLimit});

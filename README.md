@@ -64,7 +64,7 @@ https://goerli.etherscan.io/address/0xd8b5bd81ac22ddabb8417db9cd93f5bc605f91cc#c
 You might like to quickly run a transaction call against the deployed contract, this can be used for testing. The following is an example of function call on `name` with a deployed contract that has been setup with a constructor:
 
 ```
-npx hardhat tx --contract-name "Storage" --function-name "test" --function-args [""]
+npx hardhat tx --contract-name "Storage" --address 0xd8b5bd81ac22ddabb8417db9cd93f5bc605f91cc --function-name "retrieve" --function-args [""]
 ```
 
 Your out should look like the following:
@@ -72,7 +72,7 @@ Your out should look like the following:
 ```
 (node:69382) ExperimentalWarning: stream/web is an experimental feature. This feature could change at any time
 (Use `node --trace-warnings ...` to show where the warning was created)
-42
+52
 ```
 
 
